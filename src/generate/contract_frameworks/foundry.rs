@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use serde::Deserialize;
-use crate::types::{AbiEntry, IntermidiateContract, SolidityOutputFile};
 use super::GenerateContract;
+use crate::types::{AbiEntry, ContractMetadata, IntermediateContracts, SolidityOutputFile};
+use serde::Deserialize;
+use std::{collections::HashMap, path::PathBuf, u64, u8};
 
 #[derive(Deserialize, Debug)]
 pub struct FoundryDeployData {
@@ -21,9 +21,12 @@ pub struct FoundryTransaction {
     pub contract_address: String,
 }
 
-pub struct Foundry;
+pub struct Foundry {
+    contracts_path: PathBuf,
+}
+
 impl GenerateContract for Foundry {
-    fn get_intermediate_contratcs(contracts_path: &PathBuf) -> Vec<IntermidiateContract>{
+    fn get_intermediate_contratcs(contracts_path: &PathBuf) -> IntermediateContracts {
         let output = std::process::Command::new("forge")
             .arg("build")
             .current_dir(contracts_path)
@@ -45,33 +48,49 @@ impl GenerateContract for Foundry {
                 panic!("Failed to compile contracts: {e}");
             }
         }
-    } 
+    }
 }
 
 // TODO: add PathBuf to instance
 impl Foundry {
-    fn get_intermediate_contratcs(contracts_path: &PathBuf) -> Vec<IntermidiateContract> {
-        let deploy_data = Foundry::get_deploy_data(contracts_path);
-        Foundry::parse_deploy_data(deploy_data, contracts_path)
+    fn get_intermediate_contratcs(contracts_path: &PathBuf) -> IntermediateContracts {
+        let chain_ids = Foundry::get_chain_ids(contracts_path);
+
+        let mut intermiate_contracts: IntermediateContracts = HashMap::new();
+
+        chain_ids
+            .into_iter()
+            .map(|chain_id| Foundry::get_deploy_data(contracts_path, chain_id))
+            .map(|deploy_data| Foundry::parse_deploy_data(deploy_data, contracts_path))
+            .for_each(|contracts| {
+                intermiate_contracts.insert(contracts[0].chain, contracts);
+            });
+
+        intermiate_contracts
     }
 
-    fn  get_deploy_data(contracts_path: &PathBuf) -> FoundryDeployData {
+    fn get_deploy_data(contracts_path: &PathBuf, chain_id: u64) -> FoundryDeployData {
+        // get folders name inside folder
         let deploy_data_path = contracts_path
             .join("broadcast")
             .join("Deploy.s.sol")
-            .join("31337")
+            .join(chain_id.to_string())
             .join("run-latest.json");
 
-        let raw_deploy_data = std::fs::read_to_string(deploy_data_path).expect("Failed to read deploy data");
-        let deploy_data: FoundryDeployData = serde_json::from_str(&raw_deploy_data).expect("Failed to parse deploy data");
+        let raw_deploy_data =
+            std::fs::read_to_string(deploy_data_path).expect("Failed to read deploy data");
+        let deploy_data: FoundryDeployData =
+            serde_json::from_str(&raw_deploy_data).expect("Failed to parse deploy data");
 
         deploy_data
     }
 
-    fn parse_deploy_data(deploy_data: FoundryDeployData, contracts_path: &PathBuf) -> Vec<IntermidiateContract> {
-        println!("deploy_data: {:?}", deploy_data);
- 
-        deploy_data.transactions
+    fn parse_deploy_data(
+        deploy_data: FoundryDeployData,
+        contracts_path: &PathBuf,
+    ) -> Vec<ContractMetadata> {
+        deploy_data
+            .transactions
             .into_iter()
             .filter(|transaction| {
                 // Check if contract exists in the build folder
@@ -87,13 +106,15 @@ impl Foundry {
             .map(|transaction| {
                 let abi = Foundry::get_abi(&transaction.contract_name, contracts_path);
 
-                IntermidiateContract {
+                ContractMetadata {
                     address: transaction.contract_address,
                     name: transaction.contract_name,
                     abi,
                     bytecode: String::new(),
-            }})
-            .collect()
+                    chain: deploy_data.chain,
+                }
+            })
+            .collect::<Vec<ContractMetadata>>()
     }
 
     fn get_abi(contract_name: &String, contracts_path: &PathBuf) -> Vec<AbiEntry> {
@@ -103,8 +124,25 @@ impl Foundry {
             .join(format!("{contract_name}.json"));
 
         let raw_abi = std::fs::read_to_string(abi_path).expect("Failed to read abi");
-        let solidity_output: SolidityOutputFile = serde_json::from_str(&raw_abi).expect("Failed to parse abi");
+        let solidity_output: SolidityOutputFile =
+            serde_json::from_str(&raw_abi).expect("Failed to parse abi");
 
         solidity_output.abi
+    }
+
+    fn get_chain_ids(contracts_path: &PathBuf) -> Vec<u64> {
+        std::fs::read_dir(contracts_path.join("broadcast").join("Deploy.s.sol"))
+            .unwrap()
+            .filter_map(|entry| {
+                entry
+                    .ok()
+                    .and_then(|e| {
+                        e.path()
+                            .file_name()
+                            .map(|f| f.to_string_lossy().to_string())
+                    })
+                    .and_then(|filename| filename.parse::<u64>().ok())
+            })
+            .collect::<Vec<u64>>()
     }
 }

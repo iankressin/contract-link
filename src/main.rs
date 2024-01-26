@@ -1,16 +1,16 @@
-mod generate;
 mod config_handler;
+mod generate;
 mod types;
 
-use std::path::PathBuf;
 use clap::{Parser, Subcommand};
-use types::{ProjectConfig, Web3Framework, ContractsFramework};
+use std::path::PathBuf;
+use types::{ContractsFramework, ProjectConfig, Web3Framework};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>
+    command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
@@ -34,12 +34,18 @@ enum Commands {
 
     Generate {
         project: String,
-    } 
+    },
 }
 
 fn main() {
     match &Cli::parse().command {
-        Some(Commands::Config { project, contracts_framework, contracts_path, app_path, web3_framework }) => {
+        Some(Commands::Config {
+            project,
+            contracts_framework,
+            contracts_path,
+            app_path,
+            web3_framework,
+        }) => {
             let config = ProjectConfig {
                 contracts_path: contracts_path.to_path_buf(),
                 app_path: app_path.to_path_buf(),

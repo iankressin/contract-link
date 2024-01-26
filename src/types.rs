@@ -1,6 +1,6 @@
-use std::{collections::HashMap, path::PathBuf};
 use clap::ValueEnum;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::PathBuf, u64};
 
 pub type Config = HashMap<String, ProjectConfig>;
 
@@ -26,18 +26,20 @@ pub enum Web3Framework {
     Viem,
 }
 
+pub type IntermediateContracts = HashMap<u64, Vec<ContractMetadata>>;
+
 #[derive(Debug, Clone)]
-pub struct IntermidiateContract {
+pub struct ContractMetadata {
     pub address: String,
     pub name: String,
     pub abi: Vec<AbiEntry>,
     pub bytecode: String,
+    pub chain: u64,
 }
-
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct SolidityOutputFile {
-    pub abi: Vec<AbiEntry>
+    pub abi: Vec<AbiEntry>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -59,8 +61,8 @@ pub struct AbiEntry {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub payable: Option<bool>,
 
-    #[serde(rename = "stateMutability")]
-    pub state_mutability : Option<String>,
+    #[serde(rename = "stateMutability", skip_serializing_if = "Option::is_none")]
+    pub state_mutability: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
