@@ -6,8 +6,9 @@ pub type Config = HashMap<String, ProjectConfig>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectConfig {
-    pub contracts_path: PathBuf,
-    pub app_path: PathBuf,
+    pub contracts_dir: PathBuf,
+    pub abi_dir: PathBuf,
+    pub addresses_dir: PathBuf,
     pub contracts_framework: ContractsFramework,
     pub web3_framework: Web3Framework,
 }

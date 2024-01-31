@@ -2,8 +2,8 @@ pub mod contract_frameworks;
 pub mod web3_frameworks;
 
 use self::{
-    contract_frameworks::GenerateContract,
-    web3_frameworks::{viem::Viem, GenerateWeb3},
+    contract_frameworks::CompileContracts,
+    web3_frameworks::{viem::Viem, UpdateFiles},
 };
 use crate::{
     config_handler::ConfigHandler,
@@ -17,45 +17,49 @@ impl Generate {
     pub fn generate(project_name: &String) {
         match ConfigHandler::get_config(project_name) {
             Some(config) => {
-                let intermidate_contracts =
-                    Generate::compile_contracts(config.contracts_framework, config.contracts_path);
+                let intermidate_contracts = Generate::compile_contracts(
+                    config.contracts_framework,
+                    config.contracts_dir
+                );
 
                 Generate::update_app(
                     config.web3_framework,
-                    config.app_path,
+                    config.addresses_dir,
+                    config.abi_dir,
                     intermidate_contracts,
                 );
+
+                println!("Files created successfully");
             }
             None => {
                 println!("Config for project {project_name} not found");
-                println!(
-                    "Please run `contract-link config` to create a config file for this project."
-                );
+                println!("Please run `contract-link config` to create a config file for this project.");
             }
         }
     }
 
     fn compile_contracts(
         contracts_framework: ContractsFramework,
-        contracts_path: PathBuf,
+        contracts_dir: PathBuf,
     ) -> IntermediateContracts {
         match contracts_framework {
-            ContractsFramework::Foundry => Foundry::get_intermediate_contratcs(&contracts_path),
-            _ => {
-                panic!("Implement other frameworks");
-            }
+            ContractsFramework::Foundry => Foundry::get_intermediate_contratcs(&contracts_dir),
+            _ => panic!("Implement other frameworks"),
         }
     }
 
+    // TODO: better error handling
     fn update_app(
         web3_frameworks: Web3Framework,
-        contracts_path: PathBuf,
+        addresses_dir: PathBuf,
+        abi_dir: PathBuf,
         intermidiate_contracts: IntermediateContracts,
     ) {
         match web3_frameworks {
             Web3Framework::Viem => {
-                // TODO: handle error
-                Viem::generate(&contracts_path, intermidiate_contracts).unwrap();
+                Viem::new(abi_dir, addresses_dir, intermidiate_contracts)
+                    .update_files()
+                    .unwrap();
             }
             _ => {
                 panic!("Implement other frameworks");

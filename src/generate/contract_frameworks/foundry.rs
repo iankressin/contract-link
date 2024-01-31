@@ -1,7 +1,7 @@
-use super::GenerateContract;
+use super::CompileContracts;
 use crate::types::{AbiEntry, ContractMetadata, IntermediateContracts, SolidityOutputFile};
 use serde::Deserialize;
-use std::{collections::HashMap, path::PathBuf, u64, u8};
+use std::{collections::HashMap, fs, path::PathBuf, u64, u8};
 
 #[derive(Deserialize, Debug)]
 pub struct FoundryDeployData {
@@ -21,11 +21,8 @@ pub struct FoundryTransaction {
     pub contract_address: String,
 }
 
-pub struct Foundry {
-    contracts_path: PathBuf,
-}
-
-impl GenerateContract for Foundry {
+pub struct Foundry;
+impl CompileContracts for Foundry {
     fn get_intermediate_contratcs(contracts_path: &PathBuf) -> IntermediateContracts {
         let output = std::process::Command::new("forge")
             .arg("build")
@@ -78,7 +75,7 @@ impl Foundry {
             .join("run-latest.json");
 
         let raw_deploy_data =
-            std::fs::read_to_string(deploy_data_path).expect("Failed to read deploy data");
+            fs::read_to_string(deploy_data_path).expect("Failed to read deploy data");
         let deploy_data: FoundryDeployData =
             serde_json::from_str(&raw_deploy_data).expect("Failed to parse deploy data");
 
@@ -123,7 +120,7 @@ impl Foundry {
             .join(format!("{contract_name}.sol"))
             .join(format!("{contract_name}.json"));
 
-        let raw_abi = std::fs::read_to_string(abi_path).expect("Failed to read abi");
+        let raw_abi = fs::read_to_string(abi_path).expect("Failed to read abi");
         let solidity_output: SolidityOutputFile =
             serde_json::from_str(&raw_abi).expect("Failed to parse abi");
 
@@ -131,7 +128,7 @@ impl Foundry {
     }
 
     fn get_chain_ids(contracts_path: &PathBuf) -> Vec<u64> {
-        std::fs::read_dir(contracts_path.join("broadcast").join("Deploy.s.sol"))
+        fs::read_dir(contracts_path.join("broadcast").join("Deploy.s.sol"))
             .unwrap()
             .filter_map(|entry| {
                 entry

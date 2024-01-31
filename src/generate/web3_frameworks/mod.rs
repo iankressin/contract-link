@@ -1,22 +1,16 @@
 pub mod viem;
 
-use std::{error, path::PathBuf};
+use std::error;
 
-use crate::types::{ContractMetadata, IntermediateContracts};
+use crate::types::ContractMetadata;
 
-pub trait GenerateWeb3 {
-    fn generate(
-        app_path: &PathBuf,
-        intermidiate_contracts: IntermediateContracts,
-    ) -> Result<(), Box<dyn error::Error>>;
+pub trait UpdateFiles {
+    fn update_files(&self) -> Result<(), Box<dyn error::Error>>;
 
-    fn generate_web3(
-        app_path: &PathBuf,
-        intermidiate_contracts: &IntermediateContracts,
-    ) -> Result<(), Box<dyn error::Error>>;
+    fn update_addresses_file(&self) -> Result<(), Box<dyn error::Error>>;
 
     fn update_abi_files(
-        app_path: &PathBuf,
-        intermidiate_contracts: &Vec<ContractMetadata>,
+        &self, 
+        contract_metadate: &Vec<ContractMetadata>
     ) -> Result<(), Box<dyn error::Error>>;
 }
