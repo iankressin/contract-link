@@ -8,7 +8,7 @@ impl ConfigHandler {
         let home_dir = ConfigHandler::get_home_dir();
         let config_file_path = ConfigHandler::get_config_file_path();
 
-        fs::create_dir_all(format!("{home_dir}/.contract-link")).unwrap();
+        fs::create_dir_all(format!("{home_dir}/.lien")).unwrap();
 
         let config_str = fs::read_to_string(&config_file_path).unwrap_or(String::from("{}"));
         let mut config = serde_json::from_str::<Config>(&config_str).unwrap_or(HashMap::new());
@@ -36,7 +36,7 @@ impl ConfigHandler {
 
     fn get_config_file_path() -> String {
         let home_dir = ConfigHandler::get_home_dir();
-        format!("{home_dir}/.contract-link/config")
+        format!("{home_dir}/.lien/config")
     }
 
     fn get_home_dir() -> String {

@@ -1,5 +1,5 @@
 #!/bin/bash
-LIEN_DIR="$HOME/.contract-link"
+LIEN_DIR="$HOME/.lien"
 BIN_DIR="$LIEN_DIR/bin"
 
 function install {

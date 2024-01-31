@@ -33,7 +33,7 @@ impl Generate {
             }
             None => {
                 println!("Config for project {project_name} not found");
-                println!("Please run `contract-link config` to create a config file for this project.");
+                println!("Please run `lien config` to create a config file for this project.");
             }
         }
     }
