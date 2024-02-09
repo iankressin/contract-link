@@ -57,7 +57,7 @@ impl Generate {
     ) {
         match web3_frameworks {
             Web3Framework::Viem => {
-                Viem::new(abi_dir, addresses_dir, intermidiate_contracts)
+                Viem::new(addresses_dir, abi_dir, intermidiate_contracts)
                     .update_files()
                     .unwrap();
             }
